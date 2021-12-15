@@ -1,9 +1,9 @@
 const express = require('express')
 const User = require('../models/User')
 const bcrypt = require('bcryptjs')
-const { generarJWT } = require('../helpers/jwt');
+const { createJWT } = require('../helpers/jwt');
 
-const crearUsuario = async(req, res = express.response) => {
+const createUser = async(req, res = express.response) => {
 
     const { email, password} = req.body
 
@@ -13,10 +13,9 @@ const crearUsuario = async(req, res = express.response) => {
         if(user) {
             return res.status(400).json({
                 ok: false,
-                msg: 'There is an user with this email'
+                msg: 'Authentication problem'
             })
         }
-
 
         user = new User( req.body )
 
@@ -25,8 +24,8 @@ const crearUsuario = async(req, res = express.response) => {
 
         await user.save()
 
-        // Generar JWT
-        const token = await generarJWT( user.id, user.name );
+        // Generate JWT
+        const token = await createJWT( user.id, user.name );
 
         res.status(201).json({
             ok: true,
@@ -39,12 +38,57 @@ const crearUsuario = async(req, res = express.response) => {
         console.log(error)
         res.status(500).json({
             ok: false,
-            msg: 'Por favor contacte al admin'
+            msg: 'Internal server error'
         })
     }
 }
 
-const revalidarToken = async (req, res) => {
+const loginUser = async(req, res = response) => {
+
+    const { email, password } = req.body 
+
+    try {
+        let user = await User.findOne({email})
+
+        if(!user){
+            return res.status(400).json({
+                ok: false,
+                msg: 'Internal server error'
+            })
+        }
+
+        //Confirmar password
+
+        const validPassword = bcrypt.compareSync( password, user.password)
+
+        if(!validPassword) {
+            return res.status(400).json({
+                ok: false,
+                msg: 'Check your credentials'
+            })
+        }
+
+        //Generer JWT
+        const token = await createJWT( user.id, user.name)
+
+        res.json({
+            ok: true,
+            uid: user.id,
+            name: user.name,
+            token
+        })
+
+        
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({
+            ok: false,
+            msg: 'Internal server problem'
+        }) 
+    }
+}
+
+const renewToken = async (req, res) => {
 
     const { uid, name } = req;
 
@@ -58,6 +102,7 @@ const revalidarToken = async (req, res) => {
 }
 
 module.exports = {
-    crearUsuario,
-    revalidarToken
+    createUser,
+    loginUser,
+    renewToken
 }

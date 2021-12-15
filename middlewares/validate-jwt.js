@@ -8,7 +8,7 @@ const validateJWT = ( req, res = response, next ) => {
     if ( !token ) {
         return res.status(401).json({
             ok: false,
-            msg: 'No hay token en la petición'
+            msg: 'Internal server problem'
         });
     }
 
@@ -22,17 +22,16 @@ const validateJWT = ( req, res = response, next ) => {
         req.uid = uid;
         req.name = name;
 
+        next();
+
 
     } catch (error) {
         return res.status(401).json({
             ok: false,
-            msg: 'Token no válido'
+            msg: 'Invalid Token'
         });
     }
 
-
-
-    next();
 }
 
 
